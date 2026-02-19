@@ -51,7 +51,7 @@ with pyrtl.conditional_assignment:
         temp |= pred_state
         
 pred_state.next <<= temp
-# new pred is 0 and update is 0 do nothing. if its 1 and udate is 1 do nothing. else add 1 or sub 1 or whatever. 
+# new pred is 0 and update is 0 do nothing. if its 1 then update is 1 do nothing. else add 1 or sub 1 or whatever. 
 
 
 
