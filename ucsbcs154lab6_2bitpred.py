@@ -16,9 +16,12 @@ update_branch_taken = pyrtl.Input(bitwidth=1, name='update_branch_taken') # whet
 
 # Outputs
 pred_taken = pyrtl.Output(bitwidth=1, name='pred_taken')
-
 pred_state = pyrtl.Register(bitwidth = 2, name = 'pred_state')
 
+
+#helper
+
+temp = pyrtl.WireVector(bitwidth = 2, name = "temp")
 
 ####### LOGIC #######
 
@@ -26,31 +29,34 @@ pred_state = pyrtl.Register(bitwidth = 2, name = 'pred_state')
 ## if state is in the 2 states, then output yes update. else do no dont update.
 with pyrtl.conditional_assignment: 
     with update_prediction:
-        with pred_state >= 0b10:
+        with temp >= 0b10:
             pred_taken |= pyrtl.Const(val=1)
         with pyrtl.otherwise:
             pred_taken |= pyrtl.Const(val=0)
     with pyrtl.otherwise:
-        with pred_state >= 0b10:
+        with temp >= 0b10:
             pred_taken |= pyrtl.Const(val=1)
         with pyrtl.otherwise:
             pred_taken |= pyrtl.Const(val=0)
-
 
 # this manages the 2bit state
 with pyrtl.conditional_assignment:
     with update_prediction: # if this is a branch instr
         with update_branch_taken: # if this was a branch taken 
             with pred_state != 0b11:
-                pred_state.next |= pred_state + pyrtl.Const(1)
+                temp |= pred_state + pyrtl.Const(1)
+            with pyrtl.otherwise:
+                temp |= pred_state
             # do something
         with pyrtl.otherwise: # if this was a NOT branch taken, ie 
             with pred_state != 0b00:
-                pred_state.next |= pred_state - pyrtl.Const(1)
+                temp |= pred_state - pyrtl.Const(1)
+            with pyrtl.otherwise:
+                temp |= pred_state
     with pyrtl.otherwise:
-        pred_state.next |= pred_state
+        temp |= pred_state
         
-            
+pred_state.next <<= temp
 # new pred is 0 and update is 0 do nothing. if its 1 and udate is 1 do nothing. else add 1 or sub 1 or whatever. 
 
 
@@ -66,7 +72,7 @@ if __name__ == "__main__":
     predictionPrevious = 0
     count = 0
     correct = 0
-    f = open("tests/2b.txt", "r")  # Edit this line to change the trace file you read from
+    f = open("tests/2bit2_code.txt", "r")  # Edit this line to change the trace file you read from
     for iteration,line in enumerate(f): # Read through each line in the file
         pcCurrent = int(line[0:line.find(':')],0) # parse out current pc
         branchTakenCurrent = int(line[12]) # parse out branch taken

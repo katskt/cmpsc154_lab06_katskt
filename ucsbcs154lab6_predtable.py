@@ -36,16 +36,10 @@ temp = pyrtl.WireVector(bitwidth = 2, name = "temp")
 
 ## FOR CURRENT ADDR, GIVES THE PREDICTION (1BIT)
 with pyrtl.conditional_assignment: 
-    with update_prediction:
-        with temp >= 0b10:
-            pred_taken |= pyrtl.Const(val=1)
-        with pyrtl.otherwise:
-            pred_taken |= pyrtl.Const(val=0)
+    with pred_state[pred_state_index] >= 0b10:
+        pred_taken |= pyrtl.Const(val=1)
     with pyrtl.otherwise:
-        with pred_state[pred_state_index] >= 0b10:
-            pred_taken |= pyrtl.Const(val=1)
-        with pyrtl.otherwise:
-            pred_taken |= pyrtl.Const(val=0)
+        pred_taken |= pyrtl.Const(val=0)
 
 # MANAGES STATE
 
@@ -96,7 +90,7 @@ if __name__ == "__main__":
     predictionPrevious = 0
     count = 0
     correct = 0
-    f = open("demo_trace.txt", "r")  # Edit this line to change the trace file you read from
+    f = open("tests/bht2_code.txt", "r")  # Edit this line to change the trace file you read from
     for iteration,line in enumerate(f): # Read through each line in the file
         pcCurrent = int(line[0:line.find(':')],0) # parse out current pc
         branchTakenCurrent = int(line[12]) # parse out branch taken
