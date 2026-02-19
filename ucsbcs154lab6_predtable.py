@@ -46,7 +46,7 @@ with pyrtl.conditional_assignment:
             pred_taken |= pyrtl.Const(val=1)
         with pyrtl.otherwise:
             pred_taken |= pyrtl.Const(val=0)
-
+    
 # MANAGES STATE
 
 with pyrtl.conditional_assignment:
@@ -66,7 +66,7 @@ with pyrtl.conditional_assignment:
         state_of_prev |= pred_state[update_branch_pc_index] # assign to previous, which is in rf. 
 
 pred_state[update_branch_pc_index] <<= pred_state.EnabledWrite(state_of_prev, enable=(1)) 
-
+""" 
 # Use for debubggyy 
 bit000 = pyrtl.WireVector(bitwidth = 2, name = "bit0")
 bit001 = pyrtl.WireVector(bitwidth = 2, name = "bit1")
@@ -85,7 +85,7 @@ bit100 <<= pred_state[4]
 bit101 <<= pred_state[5]
 bit110 <<= pred_state[6]
 bit111 <<= pred_state[7] 
-
+ """
 # Testing
 if __name__ == "__main__":
     sim_trace = pyrtl.SimulationTrace()
@@ -96,7 +96,7 @@ if __name__ == "__main__":
     predictionPrevious = 0
     count = 0
     correct = 0
-    f = open("tests/bht_code.txt", "r")  # Edit this line to change the trace file you read from
+    f = open("tests/poop.txt", "r")  # Edit this line to change the trace file you read from
     for iteration,line in enumerate(f): # Read through each line in the file
         pcCurrent = int(line[0:line.find(':')],0) # parse out current pc
         branchTakenCurrent = int(line[12]) # parse out branch taken
