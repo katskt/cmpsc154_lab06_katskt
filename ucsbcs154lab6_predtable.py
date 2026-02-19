@@ -30,16 +30,22 @@ pred_state_index <<= fetch_pc[2:5] # CURRENT ADDR INDEX  0 is LSB, start at 2. 2
 
 update_branch_pc_index <<= update_branch_pc[2:5] # PREV ADDR INDEX
 
-temp = pyrtl.WireVector(bitwidth = 2, name = "temp")
+state_of_prev = pyrtl.WireVector(bitwidth = 2, name = "state_of_prev")
 # update old checked with the correct value
 
 
 ## FOR CURRENT ADDR, GIVES THE PREDICTION (1BIT)
 with pyrtl.conditional_assignment: 
-    with pred_state[pred_state_index] >= 0b10:
-        pred_taken |= pyrtl.Const(val=1)
+    with pred_state_index != update_branch_pc_index:
+        with pred_state[pred_state_index] >= 0b10:
+            pred_taken |= pyrtl.Const(val=1)
+        with pyrtl.otherwise:
+            pred_taken |= pyrtl.Const(val=0)
     with pyrtl.otherwise:
-        pred_taken |= pyrtl.Const(val=0)
+        with state_of_prev >= 0b10:
+            pred_taken |= pyrtl.Const(val=1)
+        with pyrtl.otherwise:
+            pred_taken |= pyrtl.Const(val=0)
 
 # MANAGES STATE
 
@@ -47,21 +53,21 @@ with pyrtl.conditional_assignment:
     with update_prediction: # if this is a branch instr
         with update_branch_taken: # if this was a branch taken 
             with pred_state[update_branch_pc_index] != 0b11:
-                temp |= pred_state[update_branch_pc_index] + pyrtl.Const(1)
+                state_of_prev |= pred_state[update_branch_pc_index] + pyrtl.Const(1)
             with pyrtl.otherwise:
-                temp |= pred_state[update_branch_pc_index]
+                state_of_prev |= pred_state[update_branch_pc_index]
             # do something
         with pyrtl.otherwise: # if this was a NOT branch taken, ie 
             with pred_state[update_branch_pc_index] != 0b00:
-                temp |= pred_state[update_branch_pc_index] - pyrtl.Const(1)
+                state_of_prev |= pred_state[update_branch_pc_index] - pyrtl.Const(1)
             with pyrtl.otherwise:
-                temp |= pred_state[update_branch_pc_index]
+                state_of_prev |= pred_state[update_branch_pc_index]
     with pyrtl.otherwise:
-        temp |= pred_state[update_branch_pc_index] # assign to previous, which is in rf. 
+        state_of_prev |= pred_state[update_branch_pc_index] # assign to previous, which is in rf. 
 
-pred_state[update_branch_pc_index] <<= pred_state.EnabledWrite(temp, enable=(1)) 
-""" 
-Use for debubggyy 
+pred_state[update_branch_pc_index] <<= pred_state.EnabledWrite(state_of_prev, enable=(1)) 
+
+# Use for debubggyy 
 bit000 = pyrtl.WireVector(bitwidth = 2, name = "bit0")
 bit001 = pyrtl.WireVector(bitwidth = 2, name = "bit1")
 bit010 = pyrtl.WireVector(bitwidth = 2, name = "bit2")
@@ -79,7 +85,7 @@ bit100 <<= pred_state[4]
 bit101 <<= pred_state[5]
 bit110 <<= pred_state[6]
 bit111 <<= pred_state[7] 
- """
+
 # Testing
 if __name__ == "__main__":
     sim_trace = pyrtl.SimulationTrace()
@@ -90,13 +96,13 @@ if __name__ == "__main__":
     predictionPrevious = 0
     count = 0
     correct = 0
-    f = open("tests/bht2_code.txt", "r")  # Edit this line to change the trace file you read from
+    f = open("tests/bht_code.txt", "r")  # Edit this line to change the trace file you read from
     for iteration,line in enumerate(f): # Read through each line in the file
         pcCurrent = int(line[0:line.find(':')],0) # parse out current pc
         branchTakenCurrent = int(line[12]) # parse out branch taken
         isBranchCurrent = int(line[16]) # parse if the current instr is a branch
 
-        sim.step({ # Feed in input values
+        sim.step({ # Feed in input values 
             'fetch_pc' : pcCurrent,
             'update_branch_pc' : pcPrevious,
             'update_prediction': isBranchPrevious,
